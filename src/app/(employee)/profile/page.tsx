@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { getCurrentUser } from '@/lib/auth'
-import { isEmployee } from '@/lib/rbac'
 import { EmployeeProfileView } from '@/components/employee/employee-profile-view'
 import { eq } from 'drizzle-orm'
 import {
@@ -23,11 +22,6 @@ export default async function EmployeeProfilePage() {
 
   if (!user || !user.id) {
     redirect('/login')
-  }
-
-  // Only employees should access this page - admin/manager go to dashboard
-  if (!isEmployee(user as any)) {
-    redirect('/')
   }
 
   const userId = user.id // Ensure we have a string for TypeScript
