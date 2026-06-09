@@ -63,7 +63,7 @@ export function NavUser() {
     )
   }
 
-  // Show nothing if no user (should not happen due to auth middleware)
+  // Show nothing if no user (should not happen due to auth proxy checks)
   if (!user) {
     return (
       <SidebarMenu>

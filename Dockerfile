@@ -56,7 +56,7 @@ COPY --chown=nextjs:nodejs package.json ./package.json
 COPY --chown=nextjs:nodejs next.config.mjs ./next.config.mjs
 COPY --chown=nextjs:nodejs postcss.config.mjs ./postcss.config.mjs
 COPY --chown=nextjs:nodejs tsconfig.json ./tsconfig.json
-COPY --chown=nextjs:nodejs middleware.ts ./middleware.ts
+COPY --chown=nextjs:nodejs proxy.ts ./proxy.ts
 COPY --chown=nextjs:nodejs components.json ./components.json
 COPY --chown=nextjs:nodejs next-env.d.ts ./next-env.d.ts
 # Copy application source

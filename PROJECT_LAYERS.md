@@ -30,11 +30,11 @@ Important files:
 - `package.json` defines the runtime, scripts, and dependencies.
 - `next.config.mjs` configures Next.js.
 - `src/app/**` contains pages, layouts, route groups, and API routes.
-- `middleware.ts` protects routes before requests reach pages.
+- `proxy.ts` protects routes before requests reach pages.
 
 The current stack in code is:
 
-- Next.js 15
+- Next.js 16
 - React 19
 - TypeScript
 - Tailwind CSS 4
@@ -67,9 +67,9 @@ The public and employee layouts are lighter and mostly provide metadata, global 
 
 ## 4. Access Control Layer
 
-Access control is split across middleware, layouts, and helper functions.
+Access control is split across proxy checks, layouts, and helper functions.
 
-`middleware.ts` handles request-level routing rules:
+`proxy.ts` handles request-level routing rules:
 
 - Allows public routes such as `/login` and `/apply`
 - Allows static/media assets to bypass auth checks
@@ -300,7 +300,7 @@ The deployment environment is selected by `.env` values such as `IMAGE_TAG`, `CO
 Authenticated dashboard page flow:
 
 1. Browser requests a dashboard URL such as `/users`.
-2. `middleware.ts` checks the session and role.
+2. `proxy.ts` checks the session and role.
 3. The dashboard layout calls `requireAuth` and checks full-access role rules.
 4. The page server component queries Drizzle.
 5. The page renders domain client components.

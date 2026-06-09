@@ -15,7 +15,7 @@ Team Track is an employee management system built with Next.js, NextAuth, Drizzl
 
 ## Tech Stack
 
-- Framework: Next.js 15 with App Router
+- Framework: Next.js 16 with App Router
 - UI: React 19, Tailwind CSS 4, Radix UI primitives, shadcn-style components
 - Authentication: NextAuth v5 credentials provider
 - Authorization: simple RBAC with `admin`, `manager`, and `employee` roles
@@ -33,7 +33,7 @@ Team Track is an employee management system built with Next.js, NextAuth, Drizzl
 - `src/app/(public)`: public routes such as `/apply`
 - `src/app/api`: API route handlers
 - `src/auth.ts`: NextAuth configuration
-- `middleware.ts`: route protection and role-based redirects
+- `proxy.ts`: route protection and role-based redirects
 - `src/db`: Drizzle database client and schema exports
 - `src/db/schema`: domain schema files for users, roles, departments, applicants, inventory, leaves, media, and payroll
 - `src/lib/actions`: server actions for authenticated mutations and dashboard data
@@ -113,7 +113,7 @@ The role model is intentionally simple:
 - `manager`: full dashboard access
 - `employee`: employee portal/profile access
 
-`middleware.ts` performs request-level protection and redirects users to the correct area based on their role.
+`proxy.ts` performs request-level protection and redirects users to the correct area based on their role.
 
 ## Public Application Flow
 
