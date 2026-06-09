@@ -1,9 +1,11 @@
 'use client'
 
 import type { InferSelectModel } from 'drizzle-orm'
-import { applicantsTable } from '@/db/schema'
+import { applicantsTable, mediaTable } from '@/db/schema'
 
-type Applicant = InferSelectModel<typeof applicantsTable>
+type Applicant = InferSelectModel<typeof applicantsTable> & {
+  cvFile?: InferSelectModel<typeof mediaTable> | null
+}
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import Link from 'next/link'
@@ -110,8 +112,14 @@ export function ApplicantsTable({ data }: ApplicantsTableProps) {
     {
       key: 'cv' as keyof Applicant,
       header: 'CV',
-      render: (cv: unknown) => {
-        const cvUrl = typeof cv === 'object' && cv && 'url' in cv ? (cv as { url: string }).url : ''
+      render: (cv: unknown, applicant: Applicant) => {
+        const cvUrl =
+          applicant.cvFile?.url ||
+          (typeof cv === 'object' && cv && 'url' in cv
+            ? (cv as { url: string }).url
+            : typeof cv === 'string' && cv.startsWith('/')
+              ? cv
+              : '')
         if (!cvUrl) return <span className="text-muted-foreground">-</span>
         return (
           <a

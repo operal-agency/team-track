@@ -10,6 +10,7 @@ import {
   IconCreditCard,
   IconCalendar,
   IconFileText,
+  IconReceipt,
 } from '@tabler/icons-react'
 
 import { NavMain } from '@/components/nav-main'
@@ -84,14 +85,19 @@ const data = {
         },
       ],
     },
+    {
+      title: 'Expenses',
+      url: '/expenses',
+      icon: IconReceipt,
+    },
   ],
 
   navSecondary: [
-    {
-      title: 'Settings',
-      url: '#',
-      icon: IconSettings,
-    },
+    // {
+    //   title: 'Settings',
+    //   url: '#',
+    //   icon: IconSettings,
+    // },
     // {
     //   title: 'Search',
     // //   url: '/search',

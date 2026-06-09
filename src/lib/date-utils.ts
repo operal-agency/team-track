@@ -7,10 +7,10 @@
  * Formats an ISO date string to "Month Day, Year" format
  * Example: "October 15, 2025"
  */
-export function formatDate(isoString?: string | null): string {
-  if (!isoString) return 'Not specified'
+export function formatDate(value?: string | Date | null): string {
+  if (!value) return 'Not specified'
 
-  const date = new Date(isoString)
+  const date = value instanceof Date ? value : new Date(value)
   if (isNaN(date.getTime())) return 'Not specified'
 
   return date.toLocaleDateString('en-US', {
@@ -24,10 +24,18 @@ export function formatDate(isoString?: string | null): string {
  * Extracts YYYY-MM-DD from an ISO string for form inputs
  * If the ISO string is already in YYYY-MM-DD format, returns it as-is
  */
-export function formatDateForInput(isoString?: string | null): string {
-  if (!isoString) return ''
+export function formatDateForInput(value?: string | Date | null): string {
+  if (!value) return ''
+
+  if (value instanceof Date) {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   // Extract just the date part (YYYY-MM-DD) from ISO string
-  return isoString.split('T')[0]
+  return value.split('T')[0]
 }
 
 /**

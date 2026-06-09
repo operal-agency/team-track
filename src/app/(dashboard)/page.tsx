@@ -3,6 +3,7 @@ import { ChartAreaInteractive } from '@/components/chart-area-interactive'
 import { UserOverviewCard } from '@/components/dashboard/user-overview-card'
 import { InventoryOverviewCard } from '@/components/dashboard/inventory-overview-card'
 import { getInventoryStats, getUserStats } from '@/lib/actions/dashboard'
+import { getExpenseDashboardSeries } from '@/lib/actions/expenses'
 import { getCurrentUser } from '@/lib/auth'
 
 export const metadata: Metadata = {
@@ -11,10 +12,11 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   // Fetch current user and dashboard stats
-  const [user, userStats, inventoryStats] = await Promise.all([
+  const [user, userStats, inventoryStats, expenseSeries] = await Promise.all([
     getCurrentUser(),
     getUserStats(),
     getInventoryStats(),
+    getExpenseDashboardSeries(),
   ])
 
   const firstName = user?.name?.split(' ')[0] || 'User'
@@ -40,7 +42,7 @@ export default async function Page() {
           </div>
 
           <div className="px-4 lg:px-6">
-            <ChartAreaInteractive />
+            <ChartAreaInteractive data={expenseSeries} />
           </div>
         </div>
       </div>

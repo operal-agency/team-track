@@ -10,6 +10,10 @@ interface EditPayrollPageProps {
   params: Promise<{ id: string }>
 }
 
+function normalizeDateInput(value: string) {
+  return value.split('T')[0]
+}
+
 export default async function EditPayrollPage({ params }: EditPayrollPageProps) {
   const { id } = await params
   await requireAuth()
@@ -117,7 +121,7 @@ async function handleUpdate(payrollId: string, formData: FormData) {
       deductionAmount: String(deductionAmount),
       adjustmentNote: adjustmentNote || null,
       totalAmount: String(totalAmount),
-      paymentDate: paymentDate ? new Date(paymentDate) : null,
+      paymentDate: paymentDate ? normalizeDateInput(paymentDate) : null,
       paymentReference: paymentReference || null,
       paymentNotes: paymentNotes || null,
       status: (status === 'rejected' ? 'cancelled' : status) as
@@ -125,7 +129,7 @@ async function handleUpdate(payrollId: string, formData: FormData) {
         | 'approved'
         | 'paid'
         | 'cancelled',
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     })
     .where(eq(payrollTable.id, payrollId))
 

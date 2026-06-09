@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SelectField } from '@/components/form/select-field'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Save, X } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
+import { DatePicker } from '@/components/date-picker'
 import type { InferSelectModel } from 'drizzle-orm'
 import { leavesTable } from '@/db/schema'
 
@@ -180,35 +181,33 @@ export function LeaveDayForm({
                   error={errors.type?.message as string | undefined}
                 />
 
-                <div>
-                  <label htmlFor="startDate" className="px-1 text-sm font-medium text-foreground">
-                    Start Date *
-                  </label>
-                  <input
-                    id="startDate"
-                    type="date"
-                    className="mt-2 w-full rounded-md border bg-background p-2"
-                    {...register('startDate')}
-                  />
-                  {errors.startDate && (
-                    <p className="text-red-500 text-sm mt-1">{errors.startDate.message}</p>
+                <Controller
+                  control={control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <DatePicker
+                      label="Start Date *"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      name="startDate"
+                      error={errors.startDate?.message as string | undefined}
+                    />
                   )}
-                </div>
+                />
 
-                <div>
-                  <label htmlFor="endDate" className="px-1 text-sm font-medium text-foreground">
-                    End Date *
-                  </label>
-                  <input
-                    id="endDate"
-                    type="date"
-                    className="mt-2 w-full rounded-md border bg-background p-2"
-                    {...register('endDate')}
-                  />
-                  {errors.endDate && (
-                    <p className="text-red-500 text-sm mt-1">{errors.endDate.message}</p>
+                <Controller
+                  control={control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <DatePicker
+                      label="End Date *"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      name="endDate"
+                      error={errors.endDate?.message as string | undefined}
+                    />
                   )}
-                </div>
+                />
 
                 {showStatusField && (
                   <SelectField

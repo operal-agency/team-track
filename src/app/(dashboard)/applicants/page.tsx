@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
 import { db } from '@/db'
 import { requireAuth } from '@/lib/auth-guards'
-import { desc } from 'drizzle-orm'
 
-import { Tabs, TabsContent } from '@radix-ui/react-tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { ApplicantsList } from '@/components/applicants/applicants-list'
 
 export const metadata: Metadata = {
@@ -14,12 +13,12 @@ export const metadata: Metadata = {
 export default async function ApplicantsPage() {
   await requireAuth()
 
-  // Fetch Applicants with cv relation
+  // Fetch Applicants with CV media relation
   const applicants = await db.query.applicantsTable.findMany({
     orderBy: (applicants, { desc }) => [desc(applicants.applicationDate)],
     limit: 100,
     with: {
-      cv: true,
+      cvFile: true,
     },
   })
 

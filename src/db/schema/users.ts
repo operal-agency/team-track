@@ -1,7 +1,7 @@
 import { pgTable, text, varchar, boolean, pgEnum, json } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 import { rolesTable } from './roles'
-import { userDepartmentsTable } from './departments'
+import { departmentManagersTable, userDepartmentsTable } from './departments'
 import { accountsTable, sessionsTable } from './auth'
 
 // ============================================
@@ -75,6 +75,7 @@ export const usersRelations = relations(usersTable, ({ one, many }) => ({
     references: [rolesTable.id],
   }),
   departments: many(userDepartmentsTable),
+  managedDepartments: many(departmentManagersTable),
   accounts: many(accountsTable),
   sessions: many(sessionsTable),
 }))

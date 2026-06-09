@@ -6,6 +6,16 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -15,6 +25,7 @@ import {
 import { Plus, FileSpreadsheet, Search } from 'lucide-react'
 import type { InferSelectModel } from 'drizzle-orm'
 import { payrollTable, usersTable } from '@/db/schema'
+import { generatePayrollsAction } from '@/lib/actions/payroll'
 
 type Payroll = InferSelectModel<typeof payrollTable>
 type User = InferSelectModel<typeof usersTable>
@@ -133,6 +144,21 @@ export function PayrollList({ data }: PayrollListProps) {
     '12': 'December',
   }
 
+  const monthOptions = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ]
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -142,12 +168,69 @@ export function PayrollList({ data }: PayrollListProps) {
           <div className="text-sm text-muted-foreground">{filtered.length} Items</div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Link href="/payroll/generate">
-            <Button variant="outline" className="w-full sm:w-auto">
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Generate Payrolls
-            </Button>
-          </Link>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Generate Payrolls
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Generate Payrolls</DialogTitle>
+                <DialogDescription>
+                  Select the period to generate monthly payroll records.
+                </DialogDescription>
+              </DialogHeader>
+              <form action={generatePayrollsAction} className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label htmlFor="generate-month" className="text-sm font-medium">
+                      Month
+                    </label>
+                    <Select name="month" defaultValue={currentMonth}>
+                      <SelectTrigger id="generate-month" className="w-full">
+                        <SelectValue placeholder="Month" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthOptions.map((month) => (
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="generate-year" className="text-sm font-medium">
+                      Year
+                    </label>
+                    <Input
+                      id="generate-year"
+                      name="year"
+                      type="number"
+                      min="2020"
+                      max="2030"
+                      defaultValue={currentYear}
+                    />
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit">
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Generate
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
           <Link href="/payroll/additional/new">
             <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />

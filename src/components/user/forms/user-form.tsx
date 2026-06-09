@@ -47,6 +47,7 @@ interface UserFormProps {
   initialData?: Partial<User>
   onSubmit?: (data: UserFormValues) => Promise<any>
   formAction?: (formData: FormData) => Promise<void>
+  headerAction?: React.ReactNode
   mode: 'create' | 'edit'
   isSubmitting?: boolean
   departments?: Array<{ value: string; label: string }>
@@ -57,6 +58,7 @@ export function UserForm({
   initialData,
   onSubmit,
   formAction,
+  headerAction,
   mode,
   isSubmitting = false,
   departments = [],
@@ -151,6 +153,7 @@ export function UserForm({
               {mode === 'create' ? 'Add New User' : 'Edit User Profile'}
             </h1>
           </div>
+          {headerAction}
         </div>
 
         <form

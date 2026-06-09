@@ -1,115 +1,92 @@
-'use client'
+import type { Metadata } from 'next'
+import { db } from '@/db'
+import {
+  departmentManagersTable,
+  departmentsTable,
+  userDepartmentsTable,
+} from '@/db/schema/departments'
+import { rolesTable } from '@/db/schema/roles'
+import { usersTable } from '@/db/schema/users'
+import { requireAuth } from '@/lib/auth-guards'
+import { count, desc, eq } from 'drizzle-orm'
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DepartmentList } from '@/components/admin/department-list'
-import { DepartmentForm } from '@/components/admin/department-form'
-import { Plus, RefreshCw } from 'lucide-react'
-import { toast } from 'sonner'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
+import { DepartmentList } from '@/components/departments/department-list'
 
-interface Department {
-  id: string
-  name: string
-  description: string | null
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  userCount: number
+export const metadata: Metadata = {
+  title: 'Departments',
+  description: 'Manage organizational departments',
 }
 
-export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
+export default async function DepartmentsPage() {
+  await requireAuth()
 
-  const fetchDepartments = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch('/api/departments')
+  const departments = await db
+    .select({
+      id: departmentsTable.id,
+      name: departmentsTable.name,
+      description: departmentsTable.description,
+      isActive: departmentsTable.isActive,
+      createdAt: departmentsTable.createdAt,
+      updatedAt: departmentsTable.updatedAt,
+      userCount: count(userDepartmentsTable.userId),
+    })
+    .from(departmentsTable)
+    .leftJoin(userDepartmentsTable, eq(departmentsTable.id, userDepartmentsTable.departmentId))
+    .groupBy(
+      departmentsTable.id,
+      departmentsTable.name,
+      departmentsTable.description,
+      departmentsTable.isActive,
+      departmentsTable.createdAt,
+      departmentsTable.updatedAt,
+    )
+    .orderBy(desc(departmentsTable.createdAt))
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch departments')
-      }
+  const departmentManagers = await db
+    .select({
+      departmentId: departmentManagersTable.departmentId,
+      userId: usersTable.id,
+      fullName: usersTable.fullName,
+    })
+    .from(departmentManagersTable)
+    .innerJoin(usersTable, eq(departmentManagersTable.userId, usersTable.id))
 
-      const data = await response.json()
-      setDepartments(data.departments || [])
-    } catch (error) {
-      toast.error('Failed to load departments')
-      console.error(error)
-    } finally {
-      setIsLoading(false)
+  const managerOptions = await db
+    .select({
+      value: usersTable.id,
+      label: usersTable.fullName,
+    })
+    .from(usersTable)
+    .innerJoin(rolesTable, eq(usersTable.roleId, rolesTable.id))
+    .where(eq(rolesTable.name, 'manager'))
+    .orderBy(usersTable.fullName)
+
+  const departmentsWithManagers = departments.map((department) => {
+    const managers = departmentManagers
+      .filter((manager) => manager.departmentId === department.id)
+      .map((manager) => ({
+        id: manager.userId,
+        fullName: manager.fullName,
+      }))
+
+    return {
+      ...department,
+      managers,
+      managerIds: managers.map((manager) => manager.id),
     }
-  }
-
-  useEffect(() => {
-    fetchDepartments()
-  }, [])
-
-  const handleCreateClick = () => {
-    setEditingDepartment(null)
-    setFormOpen(true)
-  }
-
-  const handleEditClick = (department: Department) => {
-    setEditingDepartment(department)
-    setFormOpen(true)
-  }
-
-  const handleFormSuccess = () => {
-    fetchDepartments()
-  }
+  })
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Departments</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage organizational departments and assign users
-          </p>
+    <Tabs defaultValue="outline">
+      <TabsContent
+        value="outline"
+        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
+      >
+        <div className="space-y-4 p-4 lg:p-6">
+          <DepartmentList data={departmentsWithManagers} managerOptions={managerOptions} />
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={fetchDepartments} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button onClick={handleCreateClick}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Department
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Departments</CardTitle>
-          <CardDescription>
-            {departments.length} department{departments.length !== 1 ? 's' : ''} total
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <DepartmentList
-              departments={departments}
-              onEdit={handleEditClick}
-              onRefresh={fetchDepartments}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <DepartmentForm
-        department={editingDepartment}
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        onSuccess={handleFormSuccess}
-      />
-    </div>
+      </TabsContent>
+    </Tabs>
   )
 }

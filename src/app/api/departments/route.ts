@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/db'
-import { departmentsTable, userDepartmentsTable } from '@/db/schema/departments'
+import {
+  departmentManagersTable,
+  departmentsTable,
+  userDepartmentsTable,
+} from '@/db/schema/departments'
 import { eq, count, desc } from 'drizzle-orm'
 import {
   requireFullAccessAPI,
@@ -8,6 +12,16 @@ import {
   errorResponse,
   forbiddenResponse,
 } from '@/lib/auth-guards'
+
+function normalizeManagerIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+
+  return Array.from(
+    new Set(
+      value.map((id) => (typeof id === 'string' ? id.trim() : '')).filter((id) => id.length > 0),
+    ),
+  )
+}
 
 /**
  * GET /api/admin/departments
@@ -70,6 +84,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { name, description, isActive } = body
+    const managerIds = normalizeManagerIds(body.managerIds)
 
     // Validation
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -91,15 +106,27 @@ export async function POST(request: NextRequest) {
       return errorResponse('A department with this name already exists')
     }
 
-    // Create department
-    const [newDepartment] = await db
-      .insert(departmentsTable)
-      .values({
-        name: name.trim(),
-        description: description?.trim() || null,
-        isActive: isActive !== undefined ? Boolean(isActive) : true,
-      })
-      .returning()
+    const [newDepartment] = await db.transaction(async (tx) => {
+      const [department] = await tx
+        .insert(departmentsTable)
+        .values({
+          name: name.trim(),
+          description: description?.trim() || null,
+          isActive: isActive !== undefined ? Boolean(isActive) : true,
+        })
+        .returning()
+
+      if (managerIds.length > 0) {
+        await tx.insert(departmentManagersTable).values(
+          managerIds.map((userId) => ({
+            departmentId: department.id,
+            userId,
+          })),
+        )
+      }
+
+      return [department]
+    })
 
     return successResponse(
       {

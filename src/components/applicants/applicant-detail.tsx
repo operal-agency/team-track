@@ -33,10 +33,12 @@ import {
 import { formatDate } from '@/lib/date-utils'
 import { toast } from 'sonner'
 import type { InferSelectModel } from 'drizzle-orm'
-import { applicantsTable } from '@/db/schema'
+import { applicantsTable, mediaTable } from '@/db/schema'
 import type { User } from '@/lib/rbac'
 
-type Applicant = InferSelectModel<typeof applicantsTable>
+type Applicant = InferSelectModel<typeof applicantsTable> & {
+  cvFile?: InferSelectModel<typeof mediaTable> | null
+}
 import { SetBreadcrumbLabel } from '@/components/set-breadcrumb-label'
 
 interface ApplicantDetailProps {
@@ -116,9 +118,12 @@ export function ApplicantDetail({ applicant, currentUser }: ApplicantDetailProps
   }
 
   const cvUrl =
-    typeof applicant.cv === 'object' && applicant.cv && 'url' in applicant.cv
+    applicant.cvFile?.url ||
+    (typeof applicant.cv === 'object' && applicant.cv && 'url' in applicant.cv
       ? (applicant.cv as { url: string }).url
-      : ''
+      : typeof applicant.cv === 'string' && applicant.cv.startsWith('/')
+        ? applicant.cv
+        : '')
 
   const departmentName =
     app.department && typeof app.department === 'object' && 'name' in app.department

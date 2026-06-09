@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { requireAuth } from '@/lib/auth-guards'
-import { desc } from 'drizzle-orm'
 
-import { Tabs, TabsContent } from '@radix-ui/react-tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { UserList } from '@/components/user/user-list'
 
 export const metadata: Metadata = {

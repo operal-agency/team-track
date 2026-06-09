@@ -1,7 +1,12 @@
 import { redirect, notFound } from 'next/navigation'
 import { db } from '@/db'
-import { requireAuth } from '@/lib/auth-guards'
+import { requireAdmin, requireAuth } from '@/lib/auth-guards'
+import { isAdmin } from '@/lib/rbac'
 import { UserForm } from '@/components/user/forms/user-form'
+import {
+  AdminPasswordResetForm,
+  type PasswordResetState,
+} from '@/components/user/forms/admin-password-reset-form'
 import { SetBreadcrumbLabel } from '@/components/set-breadcrumb-label'
 import { eq, asc } from 'drizzle-orm'
 import { usersTable, departmentsTable, rolesTable, userDepartmentsTable } from '@/db/schema'
@@ -14,7 +19,7 @@ interface EditUserPageProps {
 
 export default async function EditUserPage({ params }: EditUserPageProps) {
   const { id } = await params
-  await requireAuth()
+  const currentUser = await requireAuth()
 
   try {
     // Fetch the user to edit
@@ -192,12 +197,48 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
       redirect(`/users/${id}`)
     }
 
+    const handleUpdatePassword = async (
+      _state: PasswordResetState,
+      formData: FormData,
+    ): Promise<PasswordResetState> => {
+      'use server'
+
+      await requireAdmin()
+
+      const newPassword = String(formData.get('newPassword') || '')
+      const confirmNewPassword = String(formData.get('confirmNewPassword') || '')
+
+      if (newPassword.length < 6) {
+        return { error: 'Password must be at least 6 characters long.' }
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        return { error: 'Passwords do not match.' }
+      }
+
+      const bcrypt = await import('bcryptjs')
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+      await db
+        .update(usersTable)
+        .set({
+          password: hashedPassword,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(usersTable.id, id))
+
+      return { success: 'Password updated successfully.' }
+    }
+
     return (
       <>
         <SetBreadcrumbLabel label={userToEdit.fullName} />
         <UserForm
           mode="edit"
           initialData={userToEdit}
+          headerAction={
+            isAdmin(currentUser) ? <AdminPasswordResetForm action={handleUpdatePassword} /> : null
+          }
           formAction={handleUpdateUser}
           departments={departments.map((dept) => ({
             value: String(dept.id),

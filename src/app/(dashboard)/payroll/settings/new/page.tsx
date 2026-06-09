@@ -2,12 +2,16 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { requireAuth } from '@/lib/auth-guards'
-import { usersTable, payrollSettingsTable } from '@/db/schema'
+import { payrollSettingsTable } from '@/db/schema'
 import { SettingsForm } from '@/components/payroll/forms/settings-form'
 
 export const metadata: Metadata = {
   title: 'New Payroll Setting',
   description: 'Create a new payroll setting',
+}
+
+function normalizeDateInput(value: string) {
+  return value.split('T')[0]
 }
 
 export default async function NewPayrollSettingPage() {
@@ -59,8 +63,8 @@ export default async function NewPayrollSettingPage() {
         swiftCode: swiftCode || undefined,
       },
       isActive,
-      startDate: new Date(startDate),
-      endDate: endDate ? new Date(endDate) : null,
+      startDate: normalizeDateInput(startDate),
+      endDate: endDate ? normalizeDateInput(endDate) : null,
       notes: notes || null,
     })
 

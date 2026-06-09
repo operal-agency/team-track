@@ -21,3 +21,6 @@ export * from './schema/media'
 // Payroll
 export * from './schema/payroll-settings'
 export * from './schema/payroll'
+
+// Expenses
+export * from './schema/expenses'

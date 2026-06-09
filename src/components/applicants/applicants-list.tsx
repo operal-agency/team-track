@@ -6,13 +6,16 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 // import { ButtonGroup } from '@/components/ui/button-group'
 import { Badge } from '@/components/ui/badge'
-import { Filter } from 'lucide-react'
+import { Filter, Share2 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { InferSelectModel } from 'drizzle-orm'
-import { applicantsTable } from '@/db/schema'
+import { applicantsTable, mediaTable } from '@/db/schema'
+import { toast } from 'sonner'
 
-type Applicant = InferSelectModel<typeof applicantsTable>
+type Applicant = InferSelectModel<typeof applicantsTable> & {
+  cvFile?: InferSelectModel<typeof mediaTable> | null
+}
 import { ApplicantsTable } from './applicants-table'
 
 interface ApplicantsListProps {
@@ -53,6 +56,28 @@ export function ApplicantsList({ data }: ApplicantsListProps) {
 
   const getStatusLabel = (value: string) => {
     return statuses.find((s) => s.value === value)?.label || value
+  }
+
+  const handleShareApplyLink = async () => {
+    const applyUrl = `${window.location.origin}/apply`
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Apply for a Position',
+          text: 'Share this application form with candidates.',
+          url: applyUrl,
+        })
+        return
+      }
+
+      await navigator.clipboard.writeText(applyUrl)
+      toast.success('Application link copied')
+    } catch (error) {
+      if ((error as DOMException)?.name !== 'AbortError') {
+        toast.error('Could not share application link')
+      }
+    }
   }
 
   // Filter data
@@ -102,55 +127,62 @@ export function ApplicantsList({ data }: ApplicantsListProps) {
           />
         </div>
 
-        {/* Status Filter */}
-        <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Status
-              {statusFilter.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {statusFilter.length}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-64">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Filter by Status</h4>
+        <div className="flex gap-2">
+          {/* Status Filter */}
+          <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter className="h-4 w-4" />
+                Status
                 {statusFilter.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearStatusFilter}
-                    className="h-auto p-0 text-xs"
-                  >
-                    Clear
-                  </Button>
+                  <Badge variant="secondary" className="ml-1">
+                    {statusFilter.length}
+                  </Badge>
                 )}
-              </div>
-              <div className="space-y-2">
-                {statuses.map((status) => (
-                  <div key={status.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`status-${status.value}`}
-                      checked={statusFilter.includes(status.value)}
-                      onCheckedChange={() => handleStatusToggle(status.value)}
-                    />
-                    <label
-                      htmlFor={`status-${status.value}`}
-                      className="flex flex-1 items-center gap-2 text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Filter by Status</h4>
+                  {statusFilter.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearStatusFilter}
+                      className="h-auto p-0 text-xs"
                     >
-                      <span className={`h-2 w-2 rounded-full ${status.color}`} />
-                      {status.label}
-                    </label>
-                  </div>
-                ))}
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {statuses.map((status) => (
+                    <div key={status.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`status-${status.value}`}
+                        checked={statusFilter.includes(status.value)}
+                        onCheckedChange={() => handleStatusToggle(status.value)}
+                      />
+                      <label
+                        htmlFor={`status-${status.value}`}
+                        className="flex flex-1 items-center gap-2 text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        <span className={`h-2 w-2 rounded-full ${status.color}`} />
+                        {status.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+
+          <Button variant="outline" className="gap-2" onClick={handleShareApplyLink}>
+            <Share2 className="h-4 w-4" />
+            Share
+          </Button>
+        </div>
       </div>
 
       {/* Active Filters */}

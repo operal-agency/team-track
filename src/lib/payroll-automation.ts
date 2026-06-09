@@ -96,8 +96,8 @@ export async function generateMonthlyPayrolls(month: string, year: number) {
 }
 
 async function calculateLeaveDays(employeeId: string, month: string, year: number) {
-  const startDate = new Date(year, parseInt(month) - 1, 1)
-  const endDate = new Date(year, parseInt(month), 0)
+  const startDate = formatDateForDb(new Date(year, parseInt(month) - 1, 1))
+  const endDate = formatDateForDb(new Date(year, parseInt(month), 0))
 
   const leaves = await db.query.leavesTable.findMany({
     where: and(
@@ -119,6 +119,13 @@ async function calculateLeaveDays(employeeId: string, month: string, year: numbe
   })
 
   return { total: totalDays, unpaidDays }
+}
+
+function formatDateForDb(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function getWorkingDaysInMonth(month: string, year: number): number {

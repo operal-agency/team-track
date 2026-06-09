@@ -1,4 +1,6 @@
 import { pgTable, text, varchar, integer, pgEnum, boolean } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
+import { mediaTable } from './media'
 
 // ============================================
 // Enums
@@ -86,3 +88,10 @@ export const applicantsTable = pgTable('applicants', {
     .$defaultFn(() => new Date().toISOString())
     .notNull(),
 })
+
+export const applicantsRelations = relations(applicantsTable, ({ one }) => ({
+  cvFile: one(mediaTable, {
+    fields: [applicantsTable.cv],
+    references: [mediaTable.id],
+  }),
+}))

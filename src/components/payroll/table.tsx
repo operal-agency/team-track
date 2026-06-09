@@ -54,17 +54,17 @@ const statusOptions: { value: PayrollStatus; label: string }[] = [
 ]
 
 export function PayrollTable({ data, enablePagination = true }: PayrollTableProps) {
-  const [updatingStatus, setUpdatingStatus] = React.useState<number | null>(null)
-  const [deletingPayroll, setDeletingPayroll] = React.useState<number | null>(null)
+  const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null)
+  const [deletingPayroll, setDeletingPayroll] = React.useState<string | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
   const [payrollToDelete, setPayrollToDelete] = React.useState<Payroll | null>(null)
 
-  const updatePayrollStatus = async (payrollId: number, newStatus: PayrollStatus) => {
+  const updatePayrollStatus = async (payrollId: string, newStatus: PayrollStatus) => {
     setUpdatingStatus(payrollId)
     try {
       // Check if this is an additional payment
       const item = data.find(
-        (p) => Number(p.id) === payrollId || String(p.id) === `additional-${payrollId}`,
+        (p) => String(p.id) === payrollId || String(p.id) === `additional-${payrollId}`,
       )
       const isAdditional = item && (item as any).isAdditionalPayment
 
@@ -123,7 +123,7 @@ export function PayrollTable({ data, enablePagination = true }: PayrollTableProp
       ? `/api/additional-payments/${actualId}`
       : `/api/payroll/${actualId}`
 
-    setDeletingPayroll(Number(actualId))
+    setDeletingPayroll(String(actualId))
     try {
       const response = await fetch(endpoint, {
         method: 'DELETE',
@@ -297,8 +297,8 @@ export function PayrollTable({ data, enablePagination = true }: PayrollTableProp
         // Extract the actual numeric ID for comparison
         const idString = String(item.id)
         const actualId = idString.startsWith('additional-')
-          ? Number(idString.replace('additional-', ''))
-          : Number(item.id)
+          ? idString.replace('additional-', '')
+          : String(item.id)
 
         const isUpdating = updatingStatus === actualId
         const isLocked = currentStatus === 'paid' || currentStatus === 'cancelled'
@@ -352,8 +352,8 @@ export function PayrollTable({ data, enablePagination = true }: PayrollTableProp
     // Extract the actual numeric ID
     const idString = String(item.id)
     const actualId = idString.startsWith('additional-')
-      ? Number(idString.replace('additional-', ''))
-      : Number(item.id)
+      ? idString.replace('additional-', '')
+      : String(item.id)
 
     const isDeleting = deletingPayroll === actualId
     const currentStatus = String(item.status) as PayrollStatus

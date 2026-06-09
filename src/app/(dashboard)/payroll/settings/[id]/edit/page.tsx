@@ -1,13 +1,17 @@
 import { redirect, notFound } from 'next/navigation'
 import { db } from '@/db'
 import { requireAuth } from '@/lib/auth-guards'
-import { usersTable, payrollSettingsTable } from '@/db/schema'
+import { payrollSettingsTable } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { SettingsForm } from '@/components/payroll/forms/settings-form'
 import { SetBreadcrumbLabel } from '@/components/set-breadcrumb-label'
 
 interface EditPayrollSettingPageProps {
   params: Promise<{ id: string }>
+}
+
+function normalizeDateInput(value: string) {
+  return value.split('T')[0]
 }
 
 export default async function EditPayrollSettingPage({ params }: EditPayrollSettingPageProps) {
@@ -73,10 +77,10 @@ export default async function EditPayrollSettingPage({ params }: EditPayrollSett
             swiftCode: swiftCode || undefined,
           },
           isActive,
-          startDate: new Date(startDate),
-          endDate: endDate ? new Date(endDate) : null,
+          startDate: normalizeDateInput(startDate),
+          endDate: endDate ? normalizeDateInput(endDate) : null,
           notes: notes || null,
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(payrollSettingsTable.id, id))
 

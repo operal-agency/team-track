@@ -13,7 +13,7 @@ export async function updateUserStatus(userId: string, isActive: boolean) {
 
     await db
       .update(usersTable)
-      .set({ isActive, updatedAt: new Date() })
+      .set({ isActive, updatedAt: new Date().toISOString() })
       .where(eq(usersTable.id, userId))
 
     // Revalidate the user pages to show updated status

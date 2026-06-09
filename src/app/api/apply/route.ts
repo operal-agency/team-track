@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
         educationLevel: educationLevel as any,
         currentEmploymentStatus: currentEmploymentStatus as any,
         expectedSalary: expectedSalary ? parseInt(expectedSalary, 10) : null,
-        availabilityDate: availabilityDate ? new Date(availabilityDate) : null,
+        availabilityDate: availabilityDate ? availabilityDate.split('T')[0] : null,
         source: (source || 'website') as any,
         bio,
         cv: media.id,

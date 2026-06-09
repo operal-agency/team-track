@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/db'
-import { departmentsTable, userDepartmentsTable } from '@/db/schema/departments'
+import {
+  departmentManagersTable,
+  departmentsTable,
+  userDepartmentsTable,
+} from '@/db/schema/departments'
 import { eq, count } from 'drizzle-orm'
 import {
   requireFullAccessAPI,
@@ -8,6 +12,18 @@ import {
   errorResponse,
   forbiddenResponse,
 } from '@/lib/auth-guards'
+
+function normalizeManagerIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+
+  return Array.from(
+    new Set(
+      value
+        .map((managerId) => (typeof managerId === 'string' ? managerId.trim() : ''))
+        .filter((managerId) => managerId.length > 0),
+    ),
+  )
+}
 
 /**
  * GET /api/admin/departmentsTable/[id]
@@ -75,6 +91,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const body = await request.json()
     const { name, description, isActive } = body
+    const managerIds = normalizeManagerIds(body.managerIds)
 
     // Check if department exists
     const [existing] = await db
@@ -109,17 +126,33 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    // Update department
-    const [updated] = await db
-      .update(departmentsTable)
-      .set({
-        ...(name !== undefined && { name: name.trim() }),
-        ...(description !== undefined && { description: description?.trim() || null }),
-        ...(isActive !== undefined && { isActive: Boolean(isActive) }),
-        updatedAt: new Date(),
-      })
-      .where(eq(departmentsTable.id, id))
-      .returning()
+    const [updated] = await db.transaction(async (tx) => {
+      const [department] = await tx
+        .update(departmentsTable)
+        .set({
+          ...(name !== undefined && { name: name.trim() }),
+          ...(description !== undefined && { description: description?.trim() || null }),
+          ...(isActive !== undefined && { isActive: Boolean(isActive) }),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(departmentsTable.id, id))
+        .returning()
+
+      if (Array.isArray(body.managerIds)) {
+        await tx.delete(departmentManagersTable).where(eq(departmentManagersTable.departmentId, id))
+
+        if (managerIds.length > 0) {
+          await tx.insert(departmentManagersTable).values(
+            managerIds.map((userId) => ({
+              departmentId: id,
+              userId,
+            })),
+          )
+        }
+      }
+
+      return [department]
+    })
 
     return successResponse({
       department: updated,
@@ -172,6 +205,8 @@ export async function DELETE(
         400,
       )
     }
+
+    await db.delete(departmentManagersTable).where(eq(departmentManagersTable.departmentId, id))
 
     // Delete department
     await db.delete(departmentsTable).where(eq(departmentsTable.id, id))

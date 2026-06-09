@@ -1,15 +1,7 @@
-import {
-  pgTable,
-  text,
-  varchar,
-  integer,
-  pgEnum,
-  json,
-  numeric,
-} from 'drizzle-orm/pg-core'
+import { pgTable, text, varchar, integer, pgEnum, json, numeric } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 import { usersTable } from './users'
-import { payrollSettingsTable, paymentMethodEnum, payrollTypeEnum } from './payroll-settings'
+import { paymentMethodEnum } from './payroll-settings'
 
 // ============================================
 // Enums
@@ -20,6 +12,15 @@ export const payrollStatusEnum = pgEnum('payroll_status', [
   'approved',
   'paid',
   'cancelled',
+])
+
+export const additionalPaymentCategoryEnum = pgEnum('additional_payment_category', [
+  'bonus',
+  'deduction',
+  'advance',
+  'commission',
+  'allowance',
+  'other',
 ])
 
 // ============================================
@@ -81,6 +82,34 @@ export const payrollTable = pgTable('payroll', {
 })
 
 // ============================================
+// Additional Payments Table (One-off Payments)
+// ============================================
+
+export const additionalPaymentsTable = pgTable('additional_payments', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+
+  employeeId: text('employee_id').notNull(),
+  category: additionalPaymentCategoryEnum('category').default('bonus').notNull(),
+  description: text('description').notNull(),
+  amount: numeric('amount', { precision: 10, scale: 2 }).notNull(),
+  paymentType: paymentMethodEnum('payment_type').default('bankTransfer').notNull(),
+  month: varchar('month', { length: 2 }).notNull(),
+  year: integer('year').notNull(),
+  status: payrollStatusEnum('status').default('generated').notNull(),
+  notes: text('notes'),
+  paymentDate: text('payment_date'), // ISO 8601: "YYYY-MM-DD"
+
+  createdAt: text('created_at')
+    .$defaultFn(() => new Date().toISOString())
+    .notNull(),
+  updatedAt: text('updated_at')
+    .$defaultFn(() => new Date().toISOString())
+    .notNull(),
+})
+
+// ============================================
 // Relations
 // ============================================
 
@@ -91,6 +120,13 @@ export const payrollRelations = relations(payrollTable, ({ one }) => ({
   }),
   processedBy: one(usersTable, {
     fields: [payrollTable.processedById],
+    references: [usersTable.id],
+  }),
+}))
+
+export const additionalPaymentsRelations = relations(additionalPaymentsTable, ({ one }) => ({
+  employee: one(usersTable, {
+    fields: [additionalPaymentsTable.employeeId],
     references: [usersTable.id],
   }),
 }))
