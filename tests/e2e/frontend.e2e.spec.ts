@@ -1,20 +1,26 @@
-import { test, expect, Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-test.describe('Frontend', () => {
-  let page: Page
+test.describe('public pages', () => {
+  test('shows the current login page', async ({ page }) => {
+    await page.goto('/login')
 
-  test.beforeAll(async ({ browser }, testInfo) => {
-    const context = await browser.newContext()
-    page = await context.newPage()
+    await expect(page).toHaveTitle(/Login \| TeamTrack/)
+    await expect(page.getByText('Team Track')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Login to your account' })).toBeVisible()
+    await expect(page.getByLabel('Username or Email')).toBeVisible()
+    await expect(page.getByLabel('Password')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Login' })).toBeVisible()
   })
 
-  test('can go on homepage', async ({ page }) => {
-    await page.goto('http://localhost:3000')
+  test('shows the public application form', async ({ page }) => {
+    await page.goto('/apply')
 
-    await expect(page).toHaveTitle(/Payload Blank Template/)
-
-    const heading = page.locator('h1').first()
-
-    await expect(heading).toHaveText('Welcome to your new project.')
+    await expect(page).toHaveTitle(/Apply for a Position \| TeamTrack/)
+    await expect(page.getByRole('heading', { name: 'Join Our Team' })).toBeVisible()
+    await expect(page.getByText('Application Form')).toBeVisible()
+    await expect(page.getByLabel(/Full Name/)).toBeVisible()
+    await expect(page.getByLabel(/Email/)).toBeVisible()
+    await expect(page.getByLabel(/Phone Number/)).toBeVisible()
+    await expect(page.getByLabel(/Position Applied For/)).toBeVisible()
   })
 })

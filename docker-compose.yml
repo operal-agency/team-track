@@ -1,31 +1,73 @@
-version: '3'
-
 services:
-  app:
-    image: node:18-alpine
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/home/node/app
-      - node_modules:/home/node/app/node_modules
-    working_dir: /home/node/app/
-    command: sh -c "corepack enable pnpm && pnpm install && pnpm dev"
-    depends_on:
-      - db
-    env_file:
-      - .env
-
   db:
     image: postgres:15-alpine
-    ports:
-      - '5432:5432'
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER:-teamtrack_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-change-me}
+      - POSTGRES_DB=${POSTGRES_DB:-teamtrack_db}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - teamtrack_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/${GITHUB_OWNER:-moh92ahm}/${APP_NAME:-team-track}:${IMAGE_TAG:-latest}
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - HOME=/app
+      - TMPDIR=/tmp
+      - USER=nextjs
+      - MEDIA_DIR=/app/public/media
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - '3000'
+    volumes:
+      - teamtrack_media:/app/public/media
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000/ || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  migrate:
+    image: ghcr.io/${GITHUB_OWNER:-moh92ahm}/${APP_NAME:-team-track}:${IMAGE_TAG:-latest}
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -lc "pnpm db:migrate"
+    restart: 'no'
+
+  nginx:
+    image: nginx:stable-alpine
+    environment:
+      - NGINX_SERVER_NAME=${NGINX_SERVER_NAME:-team.elaramedical.com}
+      - NGINX_CERT_NAME=${NGINX_CERT_NAME:-team.elaramedical.com}
+    volumes:
+      - ./nginx.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./certs:/etc/letsencrypt:ro
+    ports:
+      - '80:80'
+      - '443:443'
+    depends_on:
+      - app
+    restart: unless-stopped
 
 volumes:
-  pgdata:
-  node_modules:
+  teamtrack_pgdata:
+  teamtrack_media:

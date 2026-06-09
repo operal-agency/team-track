@@ -1,127 +1,219 @@
-# Team Track - Employee Management System
+# Team Track
 
-A comprehensive employee management system built with Next.js 15, PayloadCMS 3.x, and PostgreSQL.
+Team Track is an employee management system built with Next.js, NextAuth, Drizzle ORM, and PostgreSQL.
 
 ## Features
 
-- 👥 **User Management**: Complete employee profiles with departments, roles, and documents
-- 📊 **Payroll System**: Automated payroll generation, additional payments, and adjustments
-- 📦 **Inventory Management**: Track company assets, assignments, and status
-- 🏖️ **Leave Management**: Handle leave requests, approvals, and tracking
-- 🔐 **RBAC**: Role-based access control with granular permissions
-- 📱 **Responsive Design**: Mobile-friendly interface with drawer navigation
-- 🎨 **Modern UI**: Built with Shadcn UI components and Tailwind CSS
+- User and employee profile management
+- Department and role assignment
+- Public applicant intake form with CV upload
+- Inventory assignment and status tracking
+- Leave request tracking
+- Payroll settings and generated payroll records
+- Role-based access control for admins, managers, and employees
+- Responsive dashboard UI built with Tailwind CSS and shadcn/Radix-style components
 
-## Quick Start - Local Development
+## Tech Stack
 
-To spin up this template locally, follow these steps:
+- Framework: Next.js 15 with App Router
+- UI: React 19, Tailwind CSS 4, Radix UI primitives, shadcn-style components
+- Authentication: NextAuth v5 credentials provider
+- Authorization: simple RBAC with `admin`, `manager`, and `employee` roles
+- Database: PostgreSQL
+- ORM and migrations: Drizzle ORM and Drizzle Kit
+- Forms and validation: React Hook Form and Zod where used
+- Testing: Vitest for integration tests and Playwright for browser tests
+- Deployment: Docker Compose, nginx, PostgreSQL, and GHCR images
 
-### Clone
+## Project Structure
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+- `src/app`: App Router pages, layouts, route groups, and API routes
+- `src/app/(dashboard)`: admin and manager dashboard routes
+- `src/app/(employee)`: employee portal routes
+- `src/app/(public)`: public routes such as `/apply`
+- `src/app/api`: API route handlers
+- `src/auth.ts`: NextAuth configuration
+- `middleware.ts`: route protection and role-based redirects
+- `src/db`: Drizzle database client and schema exports
+- `src/db/schema`: domain schema files for users, roles, departments, applicants, inventory, leaves, media, and payroll
+- `src/lib/actions`: server actions for authenticated mutations and dashboard data
+- `src/lib/auth.ts`: session helper functions
+- `src/lib/auth-guards.ts`: page/API auth guards and response helpers
+- `src/lib/rbac.ts`: role helper functions
+- `src/components`: reusable UI primitives and domain components
+- `drizzle`: generated Drizzle migrations and metadata
+- `tests`: Vitest integration tests and Playwright E2E tests
 
-### Development
+For a fuller architecture walkthrough, see `PROJECT_LAYERS.md`.
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. Update `DATABASE_URI` so it points at your local or remote PostgreSQL instance.
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. Open `http://localhost:3000` to use the app in your browser
+## Local Development
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+1. Install dependencies:
 
-#### Docker (Optional)
+   ```bash
+   pnpm install
+   ```
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+2. Copy the example environment file and set your secrets:
 
-To do so, follow these steps:
+   ```bash
+   cp .env.example .env
+   ```
 
-- Modify the `MONGODB_URI` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URI` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+3. Make sure `.env` contains a PostgreSQL connection string:
 
-## How it works
+   ```bash
+   DATABASE_URL=postgresql://team_track_user:team_track_pass@127.0.0.1:5432/team_track_db
+   NEXTAUTH_SECRET=your-secret-key-here-min-32-chars
+   NEXTAUTH_URL=http://localhost:3000
+   ```
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+4. Start PostgreSQL. You can use the included Compose file:
 
-### Collections
+   ```bash
+   docker compose up -d db
+   ```
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+5. Apply the database schema:
 
-- #### Users (Authentication)
+   ```bash
+   pnpm db:push
+   ```
 
-  Users are auth-enabled collections that have access to the admin panel.
+6. Seed local data if needed:
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+   ```bash
+   pnpm seed
+   ```
 
-- #### Media
+7. Start the app:
 
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+   ```bash
+   pnpm dev
+   ```
 
-### Docker
+8. Open `http://localhost:3000`.
 
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
+## Database Commands
 
-1. Follow [steps 1 and 2 from above](#development); the docker-compose file will automatically use the `.env` file in your project root.
-2. Run `docker compose up db` to start PostgreSQL (the default credentials come from `.env`).
-3. Run `docker compose up app` in a second terminal to start the Next.js/Payload container.
-4. Follow [step 4 from above](#development) to create your first admin user at `/admin`.
+- `pnpm db:push`: push the current Drizzle schema to the database
+- `pnpm db:migrate`: run generated Drizzle migrations
+- `pnpm db:studio`: open Drizzle Studio
+- `pnpm seed`: seed application data
 
-The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
+Use `db:push` for local iteration. Use generated migrations and `db:migrate` for deployment environments.
 
-## 🚀 Production Deployment
+## Authentication And Roles
 
-### Docker + Hetzner Overview
+Authentication uses NextAuth credentials login. Users can sign in with email or username. Passwords are verified with `bcryptjs`.
 
-The repository ships with:
+The role model is intentionally simple:
 
-- `Dockerfile` optimised for multi-stage builds
-- `docker-compose-dev.yml` and `docker-compose-prod.yml` for dev/prod stacks (app + PostgreSQL + nginx + certbot)
-- `nginx.conf` and `nginx-dev.conf` reverse proxies ready for Let's Encrypt certificates
-- `.github/workflows/CI-CD.yml` GitHub Actions workflow that builds/pushes images to GHCR and deploys over SSH
+- `admin`: full dashboard access
+- `manager`: full dashboard access
+- `employee`: employee portal/profile access
 
-At a high level the deployment flow is:
+`middleware.ts` performs request-level protection and redirects users to the correct area based on their role.
 
-1. Each push to `dev` or `main` runs CI, builds the Next.js/Payload image, and pushes to GitHub Container Registry.
-2. The workflow SSHes into your Hetzner box, pulls the fresh image, runs Payload migrations, then restarts the app + nginx via Docker Compose.
-3. Certbot + nginx handle TLS termination (you only need to supply the domain certificates path on the server).
+## Public Application Flow
 
-#### Prepare Your Server
+Applicants use `/apply` to submit personal details and a CV. The API route at `POST /api/apply` validates the request, stores the CV in `public/media`, stores media metadata in PostgreSQL, and creates an applicant record.
 
-1. Install Docker and Docker Compose plugin (`sudo apt update && sudo apt install docker-ce docker-compose-plugin`).
-2. Create the deployment directory (for example `/srv/team-track`) and clone this repository there.
-3. Provision directories for certificates and shared media (defaults can be adjusted in `docker-compose-*.yml`).
-4. Populate `.env` with production secrets (`DATABASE_URI`, `PAYLOAD_SECRET`, mail provider settings, etc.).
+Authenticated uploads use `POST /api/upload` and `DELETE /api/upload`.
 
-#### Configure GitHub Actions
+## Docker
 
-Add the following repository secrets:
+Local development is normally run without Docker:
 
-- `DEV_ENV` / `PROD_ENV`: Base64-encoded `.env` files for each environment.
-- `DEV_SSH_HOST`, `DEV_SSH_PORT`, `DEV_SSH_USER`, `DEV_PRIVATE_KEY`, `DEV_DEPLOY_PATH` (repeat with `PROD_*`).
-- Optionally override `GITHUB_OWNER`/`IMAGE_TAG` via secrets if your deploy path differs.
+```bash
+pnpm dev
+```
 
-Push to the corresponding branch (`dev` or `main`) to trigger the pipeline.
+The single `docker-compose.yml` file is for remote deployment environments such as the dev server and production server. The environment-specific values live in each server's `.env` file.
 
-#### Manual Deploy Alternative
+Run Drizzle migrations in a deployed environment:
 
-If you prefer manual deploys:
+```bash
+docker compose run --rm migrate
+```
 
-1. Build the image locally: `docker build -t ghcr.io/<owner>/team-track:manual .`
-2. Push to your registry (or load it on the server).
-3. Upload a `.env` file to the server and run `docker compose -f docker-compose-prod.yml up -d`.
-4. Run migrations: `docker compose -f docker-compose-prod.yml run --rm migrate`.
-5. Restart nginx: `docker compose -f docker-compose-prod.yml restart nginx`.
+Start or update the deployed stack:
 
-## 🛠️ Tech Stack
+```bash
+docker compose up -d --remove-orphans
+```
 
-- **Framework**: Next.js 15.5.4 with App Router
-- **CMS**: PayloadCMS 3.x
-- **Database**: PostgreSQL (local or Supabase)
-- **UI**: Shadcn UI + Tailwind CSS
-- **Forms**: React Hook Form + Zod validation
-- **Authentication**: PayloadCMS built-in auth
-- **Deployment**: Docker (Hetzner via GHCR + Compose)
+## Deployment
 
-## Questions
+The repository includes:
 
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+- `Dockerfile` for the production app image
+- `docker-compose.yml` for both remote dev and production deployment
+- `nginx.conf` as a Docker nginx template driven by environment variables
+- `.github/workflows/CI-CD.yml_backup` as a saved CI/CD workflow template
+
+The intended deployment flow is:
+
+1. Build the Next.js app image.
+2. Push the image to GitHub Container Registry.
+3. Copy Compose and nginx files to the server.
+4. Create the server `.env`.
+5. Start PostgreSQL.
+6. Run Drizzle migrations with the `migrate` service.
+7. Start the app and nginx.
+
+Required production environment values include:
+
+- `DATABASE_URL`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `NEXTAUTH_SECRET`
+- `NEXTAUTH_URL`
+- `IMAGE_TAG`
+- `GITHUB_OWNER`
+- `APP_NAME`
+- `COMPOSE_PROJECT_NAME`
+- `NGINX_SERVER_NAME`
+- `NGINX_CERT_NAME`
+- upload settings such as `MAX_FILE_SIZE` and `ALLOWED_FILE_TYPES`
+
+The CI/CD workflow writes these deployment-specific values automatically. For reference, the remote dev server uses:
+
+```env
+COMPOSE_PROJECT_NAME=teamtrack_dev
+NGINX_SERVER_NAME=dev-team.elaramedical.com
+NGINX_CERT_NAME=dev-team.elaramedical.com
+```
+
+Production uses:
+
+```env
+COMPOSE_PROJECT_NAME=teamtrack_prod
+NGINX_SERVER_NAME=team.elaramedical.com www.team.elaramedical.com
+NGINX_CERT_NAME=team.elaramedical.com
+```
+
+Use different `COMPOSE_PROJECT_NAME` values for dev and production if they ever run on the same Docker host. Uploaded media is mounted as a persistent Docker volume at `/app/public/media`.
+
+## Testing
+
+Run integration tests:
+
+```bash
+pnpm test:int
+```
+
+Run Playwright tests:
+
+```bash
+pnpm test:e2e
+```
+
+Run the full test suite:
+
+```bash
+pnpm test
+```
+
+The Playwright config starts `pnpm dev` automatically and reuses an existing server on `http://localhost:3000` when available.

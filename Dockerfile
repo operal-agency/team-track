@@ -20,9 +20,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# This will be handled by CI/CD, not here
-# RUN pnpm exec payload migrate  # Moved to CI/CD
-# RUN pnpm run build             # Moved to CI/CD
+# Database migrations and app build are handled by CI/CD, not here
+# RUN pnpm db:migrate
+# RUN pnpm run build
 
 # Runtime stage - just run the app
 FROM base AS runner
@@ -59,7 +59,7 @@ COPY --chown=nextjs:nodejs tsconfig.json ./tsconfig.json
 COPY --chown=nextjs:nodejs middleware.ts ./middleware.ts
 COPY --chown=nextjs:nodejs components.json ./components.json
 COPY --chown=nextjs:nodejs next-env.d.ts ./next-env.d.ts
-# Copy src directory (includes payload.config.ts and payload-types.ts)
+# Copy application source
 COPY --chown=nextjs:nodejs src ./src
 COPY --chown=nextjs:nodejs scripts ./scripts
 

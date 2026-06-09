@@ -66,8 +66,8 @@ jobs:
         env:
           NODE_ENV: production
           SKIP_DB_CONNECTION: 'true'
-          # Provide mock DATABASE_URI to prevent connection errors during build
-          DATABASE_URI: 'postgresql://user:password@localhost:5432/mockdb'
+          # Provide mock DATABASE_URL to prevent connection errors during build
+          DATABASE_URL: 'postgresql://user:password@localhost:5432/mockdb'
       - name: Log into GHCR
         uses: docker/login-action@v2
         with:
@@ -96,14 +96,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose files to server
+      - name: Copy deployment files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEV_SSH_HOST }}
           username: ${{ secrets.DEV_SSH_USER }}
           key: ${{ secrets.DEV_PRIVATE_KEY }}
           port: ${{ secrets.DEV_SSH_PORT }}
-          source: 'docker-compose-dev.yml,nginx-dev.conf'
+          source: 'docker-compose.yml,nginx.conf'
           target: ${{ secrets.DEV_DEPLOY_PATH }}
           strip_components: 0
 
@@ -123,6 +123,9 @@ jobs:
             GITHUB_OWNER="${{ github.repository_owner }}"
             APP_NAME="${{ env.APP_NAME }}"
             IMAGE="ghcr.io/$GITHUB_OWNER/$APP_NAME:$IMAGE_TAG"
+            COMPOSE_PROJECT_NAME="teamtrack_dev"
+            NGINX_SERVER_NAME="dev-team.elaramedical.com"
+            NGINX_CERT_NAME="dev-team.elaramedical.com"
 
             echo "Using IMAGE_TAG: $IMAGE_TAG"
             echo "Using IMAGE: $IMAGE"
@@ -130,10 +133,19 @@ jobs:
             # Create environment file from DEV_ENV secret
             echo "Creating environment file from DEV_ENV secret..."
             echo -n "${{ secrets.DEV_ENV }}" | base64 --decode > .env
+            {
+              echo ""
+              echo "IMAGE_TAG=$IMAGE_TAG"
+              echo "GITHUB_OWNER=$GITHUB_OWNER"
+              echo "APP_NAME=$APP_NAME"
+              echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"
+              echo "NGINX_SERVER_NAME=$NGINX_SERVER_NAME"
+              echo "NGINX_CERT_NAME=$NGINX_CERT_NAME"
+            } >> .env
             chmod 600 .env
 
             # Export environment variables for docker-compose
-            export IMAGE_TAG GITHUB_OWNER APP_NAME
+            export IMAGE_TAG GITHUB_OWNER APP_NAME COMPOSE_PROJECT_NAME NGINX_SERVER_NAME NGINX_CERT_NAME
 
             # Login to registry
             echo "Logging into GHCR..."
@@ -142,12 +154,12 @@ jobs:
             echo "Pulling image $IMAGE"
             docker pull "$IMAGE"
 
-            # Ensure DB is up, then run migrations via compose
+            # Ensure DB is up, then run Drizzle migrations via compose
             echo "Bringing up database..."
-            docker compose -f docker-compose-dev.yml up -d db
+            docker compose -f docker-compose.yml up -d db
 
-            echo "Running database migrations (docker-compose migrate)..."
-            if docker compose -f docker-compose-dev.yml run --rm migrate; then
+            echo "Running Drizzle migrations (docker-compose migrate)..."
+            if docker compose -f docker-compose.yml run --rm migrate; then
               echo "Migrations completed"
             else
               echo "Migrations failed! Aborting deployment."
@@ -155,12 +167,12 @@ jobs:
             fi
 
             # Start app and nginx
-            echo "Starting services with docker-compose-dev.yml..."
-            docker compose -f docker-compose-dev.yml up -d --remove-orphans
+            echo "Starting services with docker-compose.yml..."
+            docker compose -f docker-compose.yml up -d --remove-orphans
 
             # Restart nginx to clear DNS cache for new app container IP
             echo "Restarting nginx to refresh DNS cache..."
-            docker compose -f docker-compose-dev.yml restart nginx || echo "Nginx restart failed, but continuing..."
+            docker compose -f docker-compose.yml restart nginx || echo "Nginx restart failed, but continuing..."
 
             # Cleanup old images
             echo "Cleaning up old Docker images..."
@@ -174,14 +186,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose files to server
+      - name: Copy deployment files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_PRIVATE_KEY }}
           port: ${{ secrets.PROD_SSH_PORT }}
-          source: 'docker-compose-prod.yml,nginx.conf'
+          source: 'docker-compose.yml,nginx.conf'
           target: ${{ secrets.PROD_DEPLOY_PATH }}
           strip_components: 0
 
@@ -201,6 +213,9 @@ jobs:
             GITHUB_OWNER="${{ github.repository_owner }}"
             APP_NAME="${{ env.APP_NAME }}"
             IMAGE="ghcr.io/$GITHUB_OWNER/$APP_NAME:$IMAGE_TAG"
+            COMPOSE_PROJECT_NAME="teamtrack_prod"
+            NGINX_SERVER_NAME="team.elaramedical.com www.team.elaramedical.com"
+            NGINX_CERT_NAME="team.elaramedical.com"
 
             echo "Using IMAGE_TAG: $IMAGE_TAG"
             echo "Using IMAGE: $IMAGE"
@@ -208,10 +223,19 @@ jobs:
             # Create environment file from PROD_ENV secret
             echo "Creating environment file from PROD_ENV secret..."
             echo -n "${{ secrets.PROD_ENV }}" | base64 --decode > .env
+            {
+              echo ""
+              echo "IMAGE_TAG=$IMAGE_TAG"
+              echo "GITHUB_OWNER=$GITHUB_OWNER"
+              echo "APP_NAME=$APP_NAME"
+              echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"
+              echo "NGINX_SERVER_NAME=$NGINX_SERVER_NAME"
+              echo "NGINX_CERT_NAME=$NGINX_CERT_NAME"
+            } >> .env
             chmod 600 .env
 
             # Export environment variables for docker-compose
-            export IMAGE_TAG GITHUB_OWNER APP_NAME
+            export IMAGE_TAG GITHUB_OWNER APP_NAME COMPOSE_PROJECT_NAME NGINX_SERVER_NAME NGINX_CERT_NAME
 
             # Login to registry
             echo "Logging into GHCR..."
@@ -220,12 +244,12 @@ jobs:
             echo "Pulling image $IMAGE"
             docker pull "$IMAGE"
 
-            # Ensure DB is up, then run migrations via compose
+            # Ensure DB is up, then run Drizzle migrations via compose
             echo "Bringing up database..."
-            docker compose -f docker-compose-prod.yml up -d db
+            docker compose -f docker-compose.yml up -d db
 
-            echo "Running database migrations (docker-compose migrate)..."
-            if docker compose -f docker-compose-prod.yml run --rm migrate; then
+            echo "Running Drizzle migrations (docker-compose migrate)..."
+            if docker compose -f docker-compose.yml run --rm migrate; then
               echo "Migrations completed"
             else
               echo "Migrations failed! Aborting deployment."
@@ -233,12 +257,12 @@ jobs:
             fi
 
             # Start app and nginx
-            echo "Starting services with docker-compose-prod.yml..."
-            docker compose -f docker-compose-prod.yml up -d --remove-orphans
+            echo "Starting services with docker-compose.yml..."
+            docker compose -f docker-compose.yml up -d --remove-orphans
 
             # Restart nginx to clear DNS cache for new app container IP
             echo "Restarting nginx to refresh DNS cache..."
-            docker compose -f docker-compose-prod.yml restart nginx || echo "Nginx restart failed, but continuing..."
+            docker compose -f docker-compose.yml restart nginx || echo "Nginx restart failed, but continuing..."
 
             # Cleanup old images
             echo "Cleaning up old Docker images..."

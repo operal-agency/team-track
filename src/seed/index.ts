@@ -78,7 +78,7 @@ async function seedMarvelCharacters(departments: any[], roles: any[]) {
       email: 'mohamad92ahm@gmail.com',
       username: 'mohammad',
       secondaryEmail: '',
-      password: '123321',
+      password: '12332it1',
       jobTitle: 'System Administrator',
       departments: findDepts(['Human Resources']),
       role: findRole('admin'),
